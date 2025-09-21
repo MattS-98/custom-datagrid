@@ -1,5 +1,17 @@
 <template>
   <div class="ww-datagrid" :class="{ editing: isEditing }" :style="cssVars">
+    <div
+      v-if="content.loading"
+      class="loading-overlay"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div class="skeleton-container">
+        <div class="skeleton-row" v-for="n in skeletonRowCount" :key="n">
+          <div class="skeleton-bar"></div>
+        </div>
+      </div>
+    </div>
     <ag-grid-vue
       :rowData="rowData"
       :columnDefs="columnDefs"
@@ -265,6 +277,12 @@ export default {
           api.paginationSetPageSize(size);
         }
       },
+      skeletonRowCount: computed(() => {
+        const size = props.content.pagination
+          ? props.content.paginationPageSize || 10
+          : 10;
+        return Math.max(1, size);
+      }),
       localeText: computed(() => {
         switch (props.content.lang) {
           case "fr":
@@ -591,6 +609,44 @@ export default {
   position: relative;
   :deep(.ag-cell-wrapper), :deep(.ag-cell-value) {
     height: 100%;
+  }
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.75) 0%,
+      rgba(255, 255, 255, 0.9) 100%
+    );
+  }
+  .skeleton-container {
+    flex: 1;
+    padding: 8px 12px;
+    display: grid;
+    grid-template-rows: repeat(var(--rows, 10), 1fr);
+    gap: 8px;
+  }
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .skeleton-bar {
+    width: 100%;
+    height: 16px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 37%, #e9ecef 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: 0 0; }
   }
   /* wwEditor:start */
   &.editing {

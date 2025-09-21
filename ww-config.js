@@ -68,6 +68,7 @@ export default {
       "resizableColumns",
       "initialFilters",
       "initialSort",
+      "loading",
       ["lang", "localeText"],
     ],
   },
@@ -1100,6 +1101,19 @@ export default {
         tooltip: "Number of rows to display per page",
       },
       hidden: (content) => !content.pagination,
+      /* wwEditor:end */
+    },
+    loading: {
+      label: { en: "Loading" },
+      type: "OnOff",
+      section: "settings",
+      bindable: true,
+      defaultValue: false,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "Show skeleton loader and disable interactions while true",
+      },
       /* wwEditor:end */
     },
     rowSelection: {
