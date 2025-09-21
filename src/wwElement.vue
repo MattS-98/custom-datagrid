@@ -13,6 +13,7 @@
       :pagination="content.pagination"
       :paginationPageSize="content.paginationPageSize || 10"
       :paginationPageSizeSelector="false"
+      :suppressPaginationPanel="true"
       :suppressMovableColumns="!content.movableColumns"
       :columnHoverHighlight="content.columnHoverHighlight"
       :locale-text="localeText"
@@ -25,6 +26,7 @@
       @filter-changed="onFilterChanged"
       @sort-changed="onSortChanged"
       @row-clicked="onRowClicked"
+      @pagination-changed="onPaginationChanged"
     >
     </ag-grid-vue>
   </div>
@@ -166,6 +168,38 @@ export default {
       }
     };
 
+    const onPaginationChanged = () => {
+      if (!gridApi.value) return;
+      const api = gridApi.value;
+      const currentPage =
+        typeof api.paginationGetCurrentPage === "function"
+          ? api.paginationGetCurrentPage()
+          : 0;
+      const pageSize =
+        typeof api.paginationGetPageSize === "function"
+          ? api.paginationGetPageSize()
+          : props.content.paginationPageSize || 10;
+      const totalRows =
+        typeof api.getDisplayedRowCount === "function"
+          ? api.getDisplayedRowCount()
+          : 0;
+      const totalPages = pageSize ? Math.max(1, Math.ceil(totalRows / pageSize)) : 1;
+      const firstRowIndex = currentPage * pageSize;
+      const lastRowIndex = Math.min(totalRows - 1, firstRowIndex + pageSize - 1);
+
+      ctx.emit("trigger-event", {
+        name: "pageChanged",
+        event: {
+          currentPage,
+          pageSize,
+          totalPages,
+          totalRows,
+          firstRowIndex,
+          lastRowIndex,
+        },
+      });
+    };
+
     /* wwEditor:start */
     const { createElement } = wwLib.useCreateElement();
     /* wwEditor:end */
@@ -178,6 +212,59 @@ export default {
       gridApi,
       onFilterChanged,
       onSortChanged,
+      onPaginationChanged,
+      // Actions
+      goToPage: (page) => {
+        if (!gridApi.value || !props.content.pagination) return;
+        const api = gridApi.value;
+        const pageNum = Number(page);
+        if (!Number.isFinite(pageNum)) return;
+        const zeroBased = Math.max(0, Math.floor(pageNum - 1));
+        const totalPages =
+          typeof api.paginationGetTotalPages === "function"
+            ? api.paginationGetTotalPages()
+            : undefined;
+        const targetPage =
+          typeof totalPages === "number" && isFinite(totalPages)
+            ? Math.min(zeroBased, Math.max(0, totalPages - 1))
+            : zeroBased;
+        if (typeof api.paginationGoToPage === "function") {
+          api.paginationGoToPage(targetPage);
+        }
+      },
+      nextPage: () => {
+        if (!gridApi.value || !props.content.pagination) return;
+        const api = gridApi.value;
+        if (typeof api.paginationGoToNextPage === "function") {
+          api.paginationGoToNextPage();
+        } else if (typeof api.paginationGetCurrentPage === "function") {
+          const current = api.paginationGetCurrentPage() || 0;
+          if (typeof api.paginationGoToPage === "function") {
+            api.paginationGoToPage(current + 1);
+          }
+        }
+      },
+      prevPage: () => {
+        if (!gridApi.value || !props.content.pagination) return;
+        const api = gridApi.value;
+        if (typeof api.paginationGoToPreviousPage === "function") {
+          api.paginationGoToPreviousPage();
+        } else if (typeof api.paginationGetCurrentPage === "function") {
+          const current = api.paginationGetCurrentPage() || 0;
+          if (typeof api.paginationGoToPage === "function") {
+            api.paginationGoToPage(Math.max(0, current - 1));
+          }
+        }
+      },
+      setPageSize: (pageSize) => {
+        if (!gridApi.value || !props.content.pagination) return;
+        const api = gridApi.value;
+        const size = Number(pageSize);
+        if (!Number.isFinite(size) || size <= 0) return;
+        if (typeof api.paginationSetPageSize === "function") {
+          api.paginationSetPageSize(size);
+        }
+      },
       localeText: computed(() => {
         switch (props.content.lang) {
           case "fr":

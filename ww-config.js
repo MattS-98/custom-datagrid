@@ -115,6 +115,18 @@ export default {
       label: { en: "On Sort Changed" },
     },
     {
+      name: "pageChanged",
+      label: { en: "On Page Changed" },
+      event: {
+        currentPage: 0,
+        pageSize: 10,
+        totalPages: 1,
+        totalRows: 0,
+        firstRowIndex: 0,
+        lastRowIndex: 0,
+      },
+    },
+    {
       name: "rowClicked",
       label: { en: "On Row Clicked" },
       event: {
@@ -124,6 +136,36 @@ export default {
         displayIndex: 0,
       },
       getTestEvent: "getRowClickedTestEvent",
+    },
+  ],
+  actions: [
+    {
+      action: "goToPage",
+      label: { en: "Go to page" },
+      args: [
+        {
+          name: "page",
+          type: "number",
+        },
+      ],
+    },
+    {
+      action: "nextPage",
+      label: { en: "Next page" },
+    },
+    {
+      action: "prevPage",
+      label: { en: "Previous page" },
+    },
+    {
+      action: "setPageSize",
+      label: { en: "Set rows per page" },
+      args: [
+        {
+          name: "pageSize",
+          type: "number",
+        },
+      ],
     },
   ],
   properties: {
