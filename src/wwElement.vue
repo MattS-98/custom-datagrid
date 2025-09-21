@@ -1,5 +1,10 @@
 <template>
-  <div class="ww-datagrid" :class="{ editing: isEditing }" :style="cssVars">
+  <div
+    class="ww-datagrid"
+    ref="containerRef"
+    :class="{ editing: isEditing, loading: !!content?.loading }"
+    :style="cssVars"
+  >
     <ag-grid-vue
       :rowData="rowData"
       :columnDefs="columnDefs"
@@ -15,8 +20,10 @@
       :paginationPageSizeSelector="false"
       :suppressPaginationPanel="true"
       :suppressMovableColumns="!content.movableColumns"
+      :suppressServerSideFullWidthLoadingRow="content?.suppressServerSideFullWidthLoadingRow ?? true"
       :columnHoverHighlight="content.columnHoverHighlight"
       :locale-text="localeText"
+      :popupParent="popupParent"
       enableCellTextSelection
       ensureDomOrder
       @grid-ready="onGridReady"
@@ -29,11 +36,16 @@
       @pagination-changed="onPaginationChanged"
     >
     </ag-grid-vue>
+    <div
+      v-if="content?.loading"
+      class="ww-loader-overlay"
+      :style="loaderStyle"
+    ></div>
   </div>
 </template>
 
 <script>
-import { shallowRef, watchEffect, computed } from "vue";
+import { shallowRef, watchEffect, computed, onMounted } from "vue";
 import { AgGridVue } from "ag-grid-vue3";
 import {
   AllCommunityModule,
@@ -82,6 +94,8 @@ export default {
     const { resolveMappingFormula } = wwLib.wwFormula.useFormula();
 
     const gridApi = shallowRef(null);
+    const containerRef = shallowRef(null);
+    const headerHeight = shallowRef(0);
     const { value: selectedRows, setValue: setSelectedRows } =
       wwLib.wwVariable.useComponentVariable({
         uid: props.uid,
@@ -109,6 +123,17 @@ export default {
 
     const onGridReady = (params) => {
       gridApi.value = params.api;
+      // Measure header height to position loader below headers
+      setTimeout(() => {
+        try {
+          const rootEl = containerRef?.value;
+          const headerEl = rootEl?.querySelector?.(".ag-header");
+          const rect = headerEl?.getBoundingClientRect?.();
+          headerHeight.value = Math.max(0, Math.floor(rect?.height || 0));
+        } catch (e) {
+          headerHeight.value = 0;
+        }
+      }, 0);
     };
 
     watchEffect(() => {
@@ -213,6 +238,14 @@ export default {
       onFilterChanged,
       onSortChanged,
       onPaginationChanged,
+      containerRef,
+      loaderStyle: computed(() => ({
+        "--ww-loader-top": `${headerHeight.value}px`,
+      })),
+      popupParent: computed(() => {
+        const doc = wwLib?.getFrontDocument?.();
+        return doc?.body;
+      }),
       // Actions
       goToPage: (page) => {
         if (!gridApi.value || !props.content.pagination) return;
@@ -592,6 +625,13 @@ export default {
   :deep(.ag-cell-wrapper), :deep(.ag-cell-value) {
     height: 100%;
   }
+  &.loading {
+    // Hide only the cells area while loading, keep headers visible
+    :deep(.ag-center-cols-viewport),
+    :deep(.ag-body-viewport) {
+      visibility: hidden;
+    }
+  }
   /* wwEditor:start */
   &.editing {
     &::before {
@@ -604,5 +644,29 @@ export default {
     }
   }
   /* wwEditor:end */
+}
+
+.ww-loader-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--ww-loader-top, 0px);
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(240,240,240,0.95) 25%, rgba(250,250,250,0.95) 50%, rgba(240,240,240,0.95) 75%);
+  background-size: 200% 100%;
+  animation: ww-shimmer 1.2s ease-in-out infinite;
+  z-index: 9;
+  pointer-events: none;
+}
+
+@keyframes ww-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// Ensure AG Grid popups render above loader overlay
+:deep(.ag-theme-quartz .ag-popup),
+:deep(.ag-popup) {
+  z-index: 1000 !important;
 }
 </style>

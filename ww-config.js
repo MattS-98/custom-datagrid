@@ -57,13 +57,14 @@ export default {
       "idFormula",
       "generateColumns",
       "columns",
-      ["pagination", "paginationPageSize"],
+      ["pagination", "paginationPageSize", "suppressServerSideFullWidthLoadingRow"],
       [
         "rowSelection",
         "enableClickSelection",
         "disableCheckboxes",
         "selectAll",
       ],
+      "loading",
       "movableColumns",
       "resizableColumns",
       "initialFilters",
@@ -1100,6 +1101,41 @@ export default {
         tooltip: "Number of rows to display per page",
       },
       hidden: (content) => !content.pagination,
+      /* wwEditor:end */
+    },
+    loading: {
+      label: { en: "Loading" },
+      type: "OnOff",
+      section: "settings",
+      bindable: true,
+      defaultValue: false,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip: "Turn on to show the grid loading skeleton. Bind to your async state.",
+      },
+      propertyHelp: {
+        tooltip: "Shows a loader over cells only. Headers remain visible.",
+      },
+      /* wwEditor:end */
+    },
+    suppressServerSideFullWidthLoadingRow: {
+      label: { en: "Suppress Full-Width Loading Row" },
+      type: "OnOff",
+      section: "settings",
+      bindable: true,
+      defaultValue: true,
+      hidden: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: "boolean",
+        tooltip:
+          "When enabled, AG Grid won't render the full-width loading row. Useful when using custom loaders that only cover cells.",
+      },
+      propertyHelp: {
+        tooltip:
+          "Disable AG Grid's built-in full-width loading row. Keep this on to prevent loaders from covering headers.",
+      },
       /* wwEditor:end */
     },
     rowSelection: {
